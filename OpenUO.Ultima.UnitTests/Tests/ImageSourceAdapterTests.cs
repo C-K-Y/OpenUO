@@ -1,16 +1,20 @@
 ﻿#region License Header
-/***************************************************************************
- *   Copyright (c) 2011 OpenUO Software Team.
- *   All Right Reserved.
- *
- *   $Id: $:
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
- *   (at your option) any later version.
- ***************************************************************************/
+
+// /***************************************************************************
+//  *   Copyright (c) 2011 OpenUO Software Team.
+//  *   All Right Reserved.
+//  *
+//  *   ImageSourceAdapterTests.cs
+//  *
+//  *   This program is free software; you can redistribute it and/or modify
+//  *   it under the terms of the GNU General Public License as published by
+//  *   the Free Software Foundation; either version 3 of the License, or
+//  *   (at your option) any later version.
+//  ***************************************************************************/
+
 #endregion
+
+#region Usings
 
 using System.Windows.Media;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -18,21 +22,23 @@ using OpenUO.Core;
 using OpenUO.Core.Patterns;
 using OpenUO.Ultima.PresentationFramework;
 
+#endregion
+
 namespace OpenUO.Ultima.UnitTests
 {
     [TestClass]
     public class WriteableBitmapAdapterTestspAdapterTests : TestingBase
     {
         private static bool _configuredKernelForTest;
-        private static IoCContainer _container;
+        private static Container _container;
 
-        protected static IoCContainer Container
+        protected static Container Container
         {
             get
             {
                 if (!_configuredKernelForTest)
                 {
-                    _container = new IoCContainer();
+                    _container = new Container();
                     _container.RegisterModule<UltimaSDKImageSourceModule>();
                     _configuredKernelForTest = true;
                 }
@@ -55,7 +61,7 @@ namespace OpenUO.Ultima.UnitTests
         public void TestTexmapsWriteableBitmapAdapter()
         {
             TexmapFactory factory = new TexmapFactory(Install, Container);
-            ImageSource texmap = factory.GetTexmap<ImageSource>(0);
+            ImageSource texmap = factory.GetTexmap<ImageSource>(1);
 
             Guard.AssertIsNotNull(texmap, "Texmap 0 was not found.");
         }
@@ -86,6 +92,7 @@ namespace OpenUO.Ultima.UnitTests
         {
             ASCIIFontFactory factory = new ASCIIFontFactory(Install, Container);
             ImageSource text = factory.GetText<ImageSource>(0, "This is a test", 0);
+
             Guard.AssertIsNotNull(text, "ASCII Font was not created.");
         }
 
@@ -94,6 +101,7 @@ namespace OpenUO.Ultima.UnitTests
         {
             UnicodeFontFactory factory = new UnicodeFontFactory(Install, Container);
             ImageSource text = factory.GetText<ImageSource>(0, "This is a test", 0);
+
             Guard.AssertIsNotNull(text, "Unicode Font was not created.");
         }
     }

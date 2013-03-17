@@ -1,18 +1,24 @@
 ﻿#region License Header
-/***************************************************************************
- *   Copyright (c) 2011 OpenUO Software Team.
- *   All Right Reserved.
- *
- *   $Id: $:
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
- *   (at your option) any later version.
- ***************************************************************************/
- #endregion
+
+// /***************************************************************************
+//  *   Copyright (c) 2011 OpenUO Software Team.
+//  *   All Right Reserved.
+//  *
+//  *   HuedTile.cs
+//  *
+//  *   This program is free software; you can redistribute it and/or modify
+//  *   it under the terms of the GNU General Public License as published by
+//  *   the Free Software Foundation; either version 3 of the License, or
+//  *   (at your option) any later version.
+//  ***************************************************************************/
+
+#endregion
+
+#region Usings
 
 using System.Runtime.InteropServices;
+
+#endregion
 
 namespace OpenUO.Ultima
 {
@@ -37,7 +43,6 @@ namespace OpenUO.Ultima
         {
             get { return _z; }
             set { _z = (sbyte)value; }
-
         }
 
         public HuedTile(short id, short hue, sbyte z)
@@ -47,7 +52,7 @@ namespace OpenUO.Ultima
             _z = z;
         }
 
-        public void Set(short id, short hue, sbyte z)
+        internal void Set(short id, short hue, sbyte z)
         {
             _id = id;
             _hue = hue;

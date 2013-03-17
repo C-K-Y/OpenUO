@@ -1,47 +1,103 @@
 ﻿#region License Header
-/***************************************************************************
- *   Copyright (c) 2011 OpenUO Software Team.
- *   All Right Reserved.
- *
- *   $Id: $:
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
- *   (at your option) any later version.
- ***************************************************************************/
- #endregion
 
+// /***************************************************************************
+//  *   Copyright (c) 2011 OpenUO Software Team.
+//  *   All Right Reserved.
+//  *
+//  *   TileMatrix.cs
+//  *
+//  *   This program is free software; you can redistribute it and/or modify
+//  *   it under the terms of the GNU General Public License as published by
+//  *   the Free Software Foundation; either version 3 of the License, or
+//  *   (at your option) any later version.
+//  ***************************************************************************/
+
+#endregion
+
+#region Usings
+
+using System;
+using System.Collections.Generic;
 using System.IO;
+
+#endregion
 
 namespace OpenUO.Ultima
 {
     public class TileMatrix
     {
-        private static InstallLocation _install;
         private static HuedTileList[][] _hueTileLists;
+        private readonly int _blockHeight;
+        private readonly int _blockWidth;
 
-        private readonly HuedTile[][][][][] _staticTiles;
-        private readonly Tile[][][] _landTiles;
-
-        private readonly Tile[] _invalidLandBlock;
         private readonly HuedTile[][][] _emptyStaticBlock;
 
-        private readonly FileStream _map;
-
         private readonly FileStream _fileIndex;
+        private readonly int _height;
+        private readonly Tile[] _invalidLandBlock;
+        private readonly FileStream _map;
+        private readonly UOPIndex _mapIndex;
         private readonly BinaryReader _reader;
 
         private readonly FileStream _staticsStream;
 
-        private readonly int _blockWidth, _blockHeight;
-        private readonly int _width, _height;
+        private readonly int _width;
 
-        private readonly TileMatrixPatch _patch;
-
-        public TileMatrixPatch Patch
+        public TileMatrix(InstallLocation install, int fileIndex, int mapID, int width, int height)
         {
-            get { return _patch; }
+            _width = width;
+            _height = height;
+            _blockWidth = width >> 3;
+            _blockHeight = height >> 3;
+
+            if (fileIndex != 0x7F)
+            {
+                string mapPath = install.GetPath("map{0}.mul", fileIndex);
+
+                if (File.Exists(mapPath))
+                {
+                    _map = new FileStream(mapPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                }
+                else
+                {
+                    mapPath = install.GetPath("map{0}LegacyMUL.uop", fileIndex);
+
+                    if (File.Exists(mapPath))
+                    {
+                        _map = new FileStream(mapPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        _mapIndex = new UOPIndex(_map);
+                    }
+                }
+
+                string indexPath = install.GetPath("staidx{0}.mul", fileIndex);
+
+                if (File.Exists(indexPath))
+                {
+                    _fileIndex = new FileStream(indexPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    _reader = new BinaryReader(_fileIndex);
+                }
+
+                string staticsPath = install.GetPath("statics{0}.mul", fileIndex);
+
+                if (File.Exists(staticsPath))
+                {
+                    _staticsStream = new FileStream(staticsPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                }
+            }
+
+            _emptyStaticBlock = new HuedTile[8][][];
+
+            for (int i = 0; i < 8; ++i)
+            {
+                _emptyStaticBlock[i] = new HuedTile[8][];
+
+                for (int j = 0; j < 8; ++j)
+                {
+                    _emptyStaticBlock[i][j] = new HuedTile[0];
+                }
+            }
+
+            _invalidLandBlock = new Tile[196];
         }
 
         public int BlockWidth
@@ -69,78 +125,14 @@ namespace OpenUO.Ultima
             get { return _emptyStaticBlock; }
         }
 
-        public TileMatrix(InstallLocation install, int fileIndex, int mapID, int width, int height)
-        {
-            _install = install;
-            _width = width;
-            _height = height;
-            _blockWidth = width >> 3;
-            _blockHeight = height >> 3;
-
-            if (fileIndex != 0x7F)
-            {
-                string mapPath = install.GetPath("map{0}.mul", fileIndex);
-                string indexPath = install.GetPath("staidx{0}.mul", fileIndex);
-                string staticsPath = install.GetPath("statics{0}.mul", fileIndex);   
-
-                if (!File.Exists(mapPath))
-                    mapPath = install.GetPath("map{0}LegacyMUL.uop", fileIndex);
-                    
-                _map = new FileStream(mapPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                _fileIndex = new FileStream(indexPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                _staticsStream = new FileStream(staticsPath, FileMode.Open, FileAccess.Read, FileShare.Read); 
-
-                _reader = new BinaryReader(_fileIndex);   
-            }
-
-            _emptyStaticBlock = new HuedTile[8][][];
-
-            for (int i = 0; i < 8; ++i)
-            {
-                _emptyStaticBlock[i] = new HuedTile[8][];
-
-                for (int j = 0; j < 8; ++j)
-                {
-                    _emptyStaticBlock[i][j] = new HuedTile[0];
-                }
-            }
-
-            _invalidLandBlock = new Tile[196];
-
-            _landTiles = new Tile[_blockWidth][][];
-            _staticTiles = new HuedTile[_blockWidth][][][][];
-
-            _patch = new TileMatrixPatch(this, install, mapID);
-
-            /*for ( int i = 0; i < m_BlockWidth; ++i )
-            {
-                m_LandTiles[i] = new Tile[m_BlockHeight][];
-                m_StaticTiles[i] = new Tile[m_BlockHeight][][][];
-            }*/
-        }
-        
-        public void SetStaticBlock(int x, int y, HuedTile[][][] value)
-        {
-            if (x < 0 || y < 0 || x >= _blockWidth || y >= _blockHeight)
-                return;
-
-            if (_staticTiles[x] == null)
-                _staticTiles[x] = new HuedTile[_blockHeight][][][];
-
-            _staticTiles[x][y] = value;
-        }
-
         public HuedTile[][][] GetStaticBlock(int x, int y)
         {
             if (x < 0 || y < 0 || x >= _blockWidth || y >= _blockHeight || _staticsStream == null || _fileIndex == null)
+            {
                 return _emptyStaticBlock;
+            }
 
-            if (_staticTiles[x] == null)
-                _staticTiles[x] = new HuedTile[_blockHeight][][][];
-
-            HuedTile[][][] tiles = _staticTiles[x][y] ?? (_staticTiles[x][y] = ReadStaticBlock(x, y));
-
-            return tiles;
+            return ReadStaticBlock(x, y);
         }
 
         public HuedTile[] GetStaticTiles(int x, int y)
@@ -150,27 +142,14 @@ namespace OpenUO.Ultima
             return tiles[x & 0x7][y & 0x7];
         }
 
-        public void SetLandBlock(int x, int y, Tile[] value)
-        {
-            if (x < 0 || y < 0 || x >= _blockWidth || y >= _blockHeight)
-                return;
-
-            if (_landTiles[x] == null)
-                _landTiles[x] = new Tile[_blockHeight][];
-
-            _landTiles[x][y] = value;
-        }
-
         public Tile[] GetLandBlock(int x, int y)
         {
-            if (x < 0 || y < 0 || x >= _blockWidth || y >= _blockHeight || _map == null) return _invalidLandBlock;
+            if (x < 0 || y < 0 || x >= _blockWidth || y >= _blockHeight || _map == null)
+            {
+                return _invalidLandBlock;
+            }
 
-            if (_landTiles[x] == null)
-                _landTiles[x] = new Tile[_blockHeight][];
-
-            Tile[] tiles = _landTiles[x][y] ?? (_landTiles[x][y] = ReadLandBlock(x, y));
-
-            return tiles;
+            return ReadLandBlock(x, y);
         }
 
         public Tile GetLandTile(int x, int y)
@@ -196,9 +175,9 @@ namespace OpenUO.Ultima
 
             _staticsStream.Seek(lookup, SeekOrigin.Begin);
 
-            StaticTile[] staTiles = new StaticTile[count];
+            StaticTileData[] staTiles = new StaticTileData[count];
 
-            fixed (StaticTile* pTiles = staTiles)
+            fixed (StaticTileData* pTiles = staTiles)
             {
                 NativeMethods._lread(_staticsStream.SafeFileHandle, pTiles, length);
 
@@ -211,13 +190,15 @@ namespace OpenUO.Ultima
                         _hueTileLists[i] = new HuedTileList[8];
 
                         for (int j = 0; j < 8; ++j)
+                        {
                             _hueTileLists[i][j] = new HuedTileList();
+                        }
                     }
                 }
 
                 HuedTileList[][] lists = _hueTileLists;
 
-                StaticTile* pCur = pTiles, pEnd = pTiles + count;
+                StaticTileData* pCur = pTiles, pEnd = pTiles + count;
 
                 while (pCur < pEnd)
                 {
@@ -232,7 +213,9 @@ namespace OpenUO.Ultima
                     tiles[i] = new HuedTile[8][];
 
                     for (int j = 0; j < 8; ++j)
+                    {
                         tiles[i][j] = lists[i][j].ToArray();
+                    }
                 }
 
                 return tiles;
@@ -243,10 +226,9 @@ namespace OpenUO.Ultima
         {
             int offset = ((x * _blockHeight) + y) * 196 + 4;
 
-            if (_install.IsUOPFormat)
+            if (_mapIndex != null)
             {
-                int block = offset / 0xC4000;
-                offset += 0xD88 + (0xD54 * (block / 100)) + (12 * block);
+                offset = _mapIndex.Lookup(offset);
             }
 
             _map.Seek(offset, SeekOrigin.Begin);
@@ -264,13 +246,145 @@ namespace OpenUO.Ultima
         public void Dispose()
         {
             if (_map != null)
+            {
                 _map.Close();
+            }
 
             if (_staticsStream != null)
+            {
                 _staticsStream.Close();
+            }
 
             if (_reader != null)
+            {
                 _reader.Close();
+            }
+        }
+
+        public class UOPIndex
+        {
+            private readonly UOPEntry[] _entries;
+            private readonly int _length;
+            private readonly BinaryReader _reader;
+            private readonly int _version;
+
+            public UOPIndex(FileStream stream)
+            {
+                _reader = new BinaryReader(stream);
+                _length = (int)stream.Length;
+
+                if (_reader.ReadInt32() != 0x50594D)
+                {
+                    throw new ArgumentException("Invalid UOP file.");
+                }
+
+                _version = _reader.ReadInt32();
+                _reader.ReadInt32();
+                int nextTable = _reader.ReadInt32();
+
+                List<UOPEntry> entries = new List<UOPEntry>();
+
+                do
+                {
+                    stream.Seek(nextTable, SeekOrigin.Begin);
+                    int count = _reader.ReadInt32();
+                    nextTable = _reader.ReadInt32();
+                    _reader.ReadInt32();
+
+                    for (int i = 0; i < count; ++i)
+                    {
+                        int offset = _reader.ReadInt32();
+
+                        if (offset == 0)
+                        {
+                            stream.Seek(30, SeekOrigin.Current);
+                            continue;
+                        }
+
+                        _reader.ReadInt64();
+                        int length = _reader.ReadInt32();
+
+                        entries.Add(new UOPEntry(offset, length));
+
+                        stream.Seek(18, SeekOrigin.Current);
+                    }
+                }
+                while (nextTable != 0 && nextTable < _length);
+
+                entries.Sort(OffsetComparer.Instance);
+
+                for (int i = 0; i < entries.Count; ++i)
+                {
+                    stream.Seek(entries[i].Offset + 2, SeekOrigin.Begin);
+
+                    int dataOffset = _reader.ReadInt16();
+                    entries[i].Offset += 4 + dataOffset;
+
+                    stream.Seek(dataOffset, SeekOrigin.Current);
+                    entries[i].Order = _reader.ReadInt32();
+                }
+
+                entries.Sort();
+                _entries = entries.ToArray();
+            }
+
+            public int Version
+            {
+                get { return _version; }
+            }
+
+            public int Lookup(int offset)
+            {
+                int total = 0;
+
+                for (int i = 0; i < _entries.Length; ++i)
+                {
+                    int newTotal = total + _entries[i].Length;
+
+                    if (offset < newTotal)
+                    {
+                        return _entries[i].Offset + (offset - total);
+                    }
+
+                    total = newTotal;
+                }
+
+                return _length;
+            }
+
+            public void Close()
+            {
+                _reader.Close();
+            }
+
+            private class OffsetComparer : IComparer<UOPEntry>
+            {
+                public static readonly IComparer<UOPEntry> Instance = new OffsetComparer();
+
+                public int Compare(UOPEntry x, UOPEntry y)
+                {
+                    return x.Offset.CompareTo(y.Offset);
+                }
+            }
+
+            private class UOPEntry : IComparable<UOPEntry>
+            {
+                public readonly int Length;
+                public int Offset;
+                public int Order;
+
+                public UOPEntry(int offset, int length)
+                {
+                    Offset = offset;
+                    Length = length;
+                    Order = 0;
+                }
+
+                public int CompareTo(UOPEntry other)
+                {
+                    return Order.CompareTo(other.Order);
+                }
+            }
         }
     }
 }

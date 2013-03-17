@@ -1,49 +1,57 @@
 ﻿#region License Header
-/***************************************************************************
- *   Copyright (c) 2011 OpenUO Software Team.
- *   All Right Reserved.
- *
- *   $Id: $:
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
- *   (at your option) any later version.
- ***************************************************************************/
- #endregion
+
+// /***************************************************************************
+//  *   Copyright (c) 2011 OpenUO Software Team.
+//  *   All Right Reserved.
+//  *
+//  *   GumpBitmapAdapter.cs
+//  *
+//  *   This program is free software; you can redistribute it and/or modify
+//  *   it under the terms of the GNU General Public License as published by
+//  *   the Free Software Foundation; either version 3 of the License, or
+//  *   (at your option) any later version.
+//  ***************************************************************************/
+
+#endregion
+
+#region Usings
 
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using OpenUO.Ultima.Adapters;
 
+#endregion
+
 namespace OpenUO.Ultima.Windows.Forms.Adapters
 {
     internal class GumpBitmapAdapter : StorageAdapterBase, IGumpStorageAdapter<Bitmap>
     {
-        private FileIndex _fileIndex;
+        private FileIndexBase _fileIndex;
+
+        public override int Length
+        {
+            get
+            {
+                if (!IsInitialized)
+                {
+                    Initialize();
+                }
+
+                return _fileIndex.Length;
+            }
+        }
 
         public override void Initialize()
         {
             base.Initialize();
 
-            var install = Install;
+            InstallLocation install = Install;
 
             _fileIndex =
                 install.IsUOPFormat
-                    ? install.CreateFileIndex("gumpartLegacyMUL.uop")
+                    ? install.CreateFileIndex("gumpartLegacyMUL.uop", 0xFFFF, true, ".tga")
                     : install.CreateFileIndex("gumpidx.mul", "gumpart.mul");
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-
-            if (_fileIndex != null)
-            {
-                _fileIndex.Close();
-                _fileIndex = null;
-            }
         }
 
         public unsafe Bitmap GetGump(int index)
@@ -52,18 +60,11 @@ namespace OpenUO.Ultima.Windows.Forms.Adapters
             Stream stream = _fileIndex.Seek(index, out length, out extra);
 
             if (stream == null)
+            {
                 return null;
+            }
 
             BinaryReader bin = new BinaryReader(stream);
-
-            if (_fileIndex.IsUopFormat)
-            {
-                bin.ReadInt32(); // Unknown
-                bin.ReadInt32(); // Unknown
-                bin.ReadInt32(); // Unknown
-
-                extra = (bin.ReadInt32() << 16) | bin.ReadInt32();
-            }
 
             int width = (extra >> 16) & 0xFFFF;
             int height = extra & 0xFFFF;
@@ -75,7 +76,9 @@ namespace OpenUO.Ultima.Windows.Forms.Adapters
             int start = (int)bin.BaseStream.Position;
 
             for (int i = 0; i < height; ++i)
+            {
                 lookups[i] = start + (bin.ReadInt32() * 4);
+            }
 
             ushort* line = (ushort*)bd.Scan0;
             int delta = bd.Stride >> 1;
@@ -101,7 +104,9 @@ namespace OpenUO.Ultima.Windows.Forms.Adapters
                         color ^= 0x8000;
 
                         while (cur < next)
+                        {
                             *cur++ = color;
+                        }
                     }
                 }
             }
@@ -109,6 +114,17 @@ namespace OpenUO.Ultima.Windows.Forms.Adapters
             bmp.UnlockBits(bd);
 
             return bmp;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            if (_fileIndex != null)
+            {
+                _fileIndex.Close();
+                _fileIndex = null;
+            }
         }
     }
 }

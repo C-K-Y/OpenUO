@@ -1,21 +1,27 @@
 ﻿#region License Header
-/***************************************************************************
- *   Copyright (c) 2011 OpenUO Software Team.
- *   All Right Reserved.
- *
- *   $Id: $:
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
- *   (at your option) any later version.
- ***************************************************************************/
- #endregion
+
+// /***************************************************************************
+//  *   Copyright (c) 2011 OpenUO Software Team.
+//  *   All Right Reserved.
+//  *
+//  *   ASCIIFontBitmapAdapter.cs
+//  *
+//  *   This program is free software; you can redistribute it and/or modify
+//  *   it under the terms of the GNU General Public License as published by
+//  *   the Free Software Foundation; either version 3 of the License, or
+//  *   (at your option) any later version.
+//  ***************************************************************************/
+
+#endregion
+
+#region Usings
 
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using OpenUO.Ultima.Adapters;
+
+#endregion
 
 namespace OpenUO.Ultima.Windows.Forms.Adapters
 {
@@ -23,11 +29,24 @@ namespace OpenUO.Ultima.Windows.Forms.Adapters
     {
         private ASCIIFont[] _fonts;
 
+        public override int Length
+        {
+            get
+            {
+                if (!IsInitialized)
+                {
+                    Initialize();
+                }
+
+                return _fonts.Length;
+            }
+        }
+
         public override void Initialize()
         {
             base.Initialize();
 
-            var install = Install;
+            InstallLocation install = Install;
 
             _fonts = new ASCIIFont[10];
 
@@ -50,16 +69,21 @@ namespace OpenUO.Ultima.Windows.Forms.Adapters
                         if (width > 0 && height > 0)
                         {
                             if (height > fontHeight && k < 96)
+                            {
                                 fontHeight = height;
+                            }
 
                             ushort[] pixels = new ushort[width * height];
 
                             for (int y = 0; y < height; ++y)
-                                for (int x = 0; x < width; ++x)
-                                    pixels[y * width + x] = (ushort)(reader.ReadByte() | (reader.ReadByte() << 8));
-
-                            chars[k] = new ASCIIChar
                             {
+                                for (int x = 0; x < width; ++x)
+                                {
+                                    pixels[y * width + x] = (ushort)(reader.ReadByte() | (reader.ReadByte() << 8));
+                                }
+                            }
+
+                            chars[k] = new ASCIIChar {
                                 Pixels = pixels,
                                 Width = width,
                                 Height = height
@@ -70,13 +94,6 @@ namespace OpenUO.Ultima.Windows.Forms.Adapters
                     _fonts[i] = new ASCIIFont(fontHeight, chars);
                 }
             }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-
-            _fonts = null;
         }
 
         public unsafe Bitmap GetText(int fontId, string text, short hueId)
@@ -117,10 +134,17 @@ namespace OpenUO.Ultima.Windows.Forms.Adapters
 
                 dx += charWidth;
             }
-            
+
             bmp.UnlockBits(bd);
 
             return bmp;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+
+            _fonts = null;
         }
     }
 }
