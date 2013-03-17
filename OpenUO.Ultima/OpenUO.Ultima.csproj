@@ -10,8 +10,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>OpenUO.Ultima</RootNamespace>
     <AssemblyName>OpenUO.Ultima</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,6 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,6 +33,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
@@ -81,6 +84,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Animations\AnimationData.cs" />
+    <Compile Include="TileData\TileComparer.cs" />
+    <Compile Include="UopFileIndex.cs" />
+    <Compile Include="MulFileIndex.cs" />
+    <Compile Include="FileIndexBase.cs" />
     <Compile Include="Clilocs\ClilocLNG.cs" />
     <Compile Include="Clilocs\ClilocInfo.cs" />
     <Compile Include="Clilocs\ClilocData.cs" />
@@ -91,7 +98,7 @@
     <Compile Include="Factories\AnimationFactory.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Factories\ASCIIFontFactory.cs">
+    <Compile Include="Factories\AsciiFontFactory.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Factories\ClilocFactory.cs" />
@@ -111,7 +118,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="UltimaSDKCoreModule.cs" />
-    <Compile Include="UopIndexEntry.cs" />
     <Compile Include="Fonts\ASCIIChar.cs" />
     <Compile Include="Fonts\ASCIIFont.cs" />
     <Compile Include="Animations\BodyConverter.cs" />
@@ -122,7 +128,6 @@
     <Compile Include="Factories\ArtworkFactory.cs" />
     <Compile Include="Factories\AdapterFactoryBase.cs" />
     <Compile Include="FileIndexEntry.cs" />
-    <Compile Include="FileIndex.cs" />
     <Compile Include="Adapters\Interfaces\IArtworkStorageAdapter.cs" />
     <Compile Include="Adapters\Interfaces\IStorageAdapter.cs" />
     <Compile Include="Animations\Frame.cs" />
@@ -145,27 +150,18 @@
     <Compile Include="Skills\SkillCategoryData.cs" />
     <Compile Include="Skills\SkillData.cs" />
     <Compile Include="Sound.cs" />
-    <Compile Include="Map\StaticTile.cs" />
+    <Compile Include="Map\StaticTileData.cs" />
     <Compile Include="Map\Tile.cs" />
     <Compile Include="TileData\TileData.cs" />
     <Compile Include="TileData\TileFlag.cs" />
-    <Compile Include="Map\TileList.cs" />
     <Compile Include="Map\TileMatrix.cs" />
     <Compile Include="Map\TileMatrixPatch.cs" />
-    <Compile Include="Transactions\Interfaces\ITransaction.cs" />
-    <Compile Include="Transactions\Interfaces\IIndexedWriteTransaction.cs" />
-    <Compile Include="Transactions\Transaction.cs" />
-    <Compile Include="Transactions\FileIndexWriteTransaction.cs" />
     <Compile Include="UltimaException.cs" />
     <Compile Include="Fonts\UnicodeChar.cs" />
     <Compile Include="Fonts\UnicodeFont.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="TODO.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Client.licenseheader" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenUO.Core\OpenUO.Core.csproj">

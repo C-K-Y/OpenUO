@@ -1,97 +1,129 @@
 ﻿#region License Header
-/***************************************************************************
- *   Copyright (c) 2011 OpenUO Software Team.
- *   All Right Reserved.
- *
- *   $Id: $:
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
- *   (at your option) any later version.
- ***************************************************************************/
+
+// /***************************************************************************
+//  *   Copyright (c) 2011 OpenUO Software Team.
+//  *   All Right Reserved.
+//  *
+//  *   ClilocStorageAdapter.cs
+//  *
+//  *   This program is free software; you can redistribute it and/or modify
+//  *   it under the terms of the GNU General Public License as published by
+//  *   the Free Software Foundation; either version 3 of the License, or
+//  *   (at your option) any later version.
+//  ***************************************************************************/
+
 #endregion
 
+#region Usings
+
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Xml;
 
-using OpenUO.Core.Diagnostics;
+#endregion
 
 namespace OpenUO.Ultima.Adapters
 {
-	public class ClilocStorageAdapter : StorageAdapterBase, IClilocStorageAdapter<ClilocInfo>
-	{
-		private Dictionary<ClilocLNG, ClilocTable> _Tables = new Dictionary<ClilocLNG, ClilocTable>
-		{
-			{ ClilocLNG.ENU, new ClilocTable() },
-			{ ClilocLNG.DEU, new ClilocTable() },
-			{ ClilocLNG.ESP, new ClilocTable() },
-			{ ClilocLNG.FRA, new ClilocTable() },
-			{ ClilocLNG.JPN, new ClilocTable() },
-			{ ClilocLNG.KOR, new ClilocTable() }
-		};
-		public Dictionary<ClilocLNG, ClilocTable> Tables { get { return _Tables; } }
+    public class ClientLocalizationStorageAdapter : StorageAdapterBase, IClilocStorageAdapter<ClilocInfo>
+    {
+        private readonly Dictionary<ClientLocalizationLanguage, ClientLocalizations> _tables =
+            new Dictionary<ClientLocalizationLanguage, ClientLocalizations> {
+                {ClientLocalizationLanguage.ENU, new ClientLocalizations()},
+                {ClientLocalizationLanguage.DEU, new ClientLocalizations()},
+                {ClientLocalizationLanguage.ESP, new ClientLocalizations()},
+                {ClientLocalizationLanguage.FRA, new ClientLocalizations()},
+                {ClientLocalizationLanguage.JPN, new ClientLocalizations()},
+                {ClientLocalizationLanguage.KOR, new ClientLocalizations()}
+            };
 
-		public override void Initialize()
-		{
-			base.Initialize();
+        public Dictionary<ClientLocalizationLanguage, ClientLocalizations> Tables
+        {
+            get { return _tables; }
+        }
 
-			List<ClilocTable> tables = new List<ClilocTable>(_Tables.Values);
+        public override int Length
+        {
+            get
+            {
+                if (!IsInitialized)
+                {
+                    Initialize();
+                }
 
-			if (tables.TrueForAll((ClilocTable t) => { return t.Loaded; }) || (Install == null || String.IsNullOrWhiteSpace(Install.Directory)))
-			{ return; }
+                return _tables[0].Count;
+            }
+        }
 
-			foreach (var kvp in _Tables)
-			{
-				if (kvp.Value.Loaded)
-				{ continue; }
+        public override void Initialize()
+        {
+            base.Initialize();
 
-				string stub = Path.Combine(Install.Directory, "/Cliloc." + kvp.Key.ToString().ToLower());
+            List<ClientLocalizations> tables = new List<ClientLocalizations>(_tables.Values);
+            bool loaded = tables.TrueForAll(t => t.Loaded);
 
-				if (File.Exists(stub))
-				{ kvp.Value.Load(new FileInfo(stub)); }
-			}
-		}
+            if (loaded || (Install == null || String.IsNullOrWhiteSpace(Install.Directory)))
+            {
+                return;
+            }
 
-		public unsafe ClilocInfo GetCliloc(ClilocLNG lng, int index)
-		{
-			if (_Tables.ContainsKey(lng) && _Tables[lng] != null)
-			{ return _Tables[lng].Lookup(index); }
+            foreach (var kvp in _tables)
+            {
+                if (kvp.Value.Loaded)
+                {
+                    continue;
+                }
 
-			return null;
-		}
+                string stub = Path.Combine(Install.Directory, "/Cliloc." + kvp.Key.ToString().ToLower());
 
-		public unsafe string GetRawString(ClilocLNG lng, int index)
-		{
-			if (_Tables.ContainsKey(lng) && _Tables[lng] != null && !_Tables[lng].IsNullOrEmpty(index))
-			{ return _Tables[lng][index].Text; }
+                if (File.Exists(stub))
+                {
+                    kvp.Value.Load(new FileInfo(stub));
+                }
+            }
+        }
 
-			return String.Empty;
-		}
+        public ClilocInfo GetCliloc(ClientLocalizationLanguage lng, int index)
+        {
+            if (_tables.ContainsKey(lng) && _tables[lng] != null)
+            {
+                return _tables[lng].Lookup(index);
+            }
 
-		public unsafe string GetString(ClilocLNG lng, int index, string args)
-		{
-			ClilocInfo info = GetCliloc(lng, index);
+            return null;
+        }
 
-			if (info == null)
-			{ return String.Empty; }
+        public string GetRawString(ClientLocalizationLanguage lng, int index)
+        {
+            if (_tables.ContainsKey(lng) && _tables[lng] != null && !_tables[lng].IsNullOrEmpty(index))
+            {
+                return _tables[lng][index].Text;
+            }
 
-			return info.ToString(args);
-		}
+            return String.Empty;
+        }
 
-		public unsafe string GetString(ClilocLNG lng, int index, params string[] args)
-		{
-			ClilocInfo info = GetCliloc(lng, index);
+        public string GetString(ClientLocalizationLanguage lng, int index, string args)
+        {
+            ClilocInfo info = GetCliloc(lng, index);
 
-			if (info == null)
-			{ return String.Empty; }
+            if (info == null)
+            {
+                return String.Empty;
+            }
 
-			return info.ToString(args);
-		}
-	}
+            return info.ToString(args);
+        }
+
+        public string GetString(ClientLocalizationLanguage lng, int index, params string[] args)
+        {
+            ClilocInfo info = GetCliloc(lng, index);
+
+            if (info == null)
+            {
+                return String.Empty;
+            }
+
+            return info.ToString(args);
+        }
+    }
 }

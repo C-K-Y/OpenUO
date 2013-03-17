@@ -10,8 +10,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>OpenUO.Core</RootNamespace>
     <AssemblyName>OpenUO.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,6 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,6 +33,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -88,7 +91,8 @@
     <Compile Include="Patterns\Chaining\Interfaces\IChainStep.cs" />
     <Compile Include="Patterns\Graphs\GraphNode.cs" />
     <Compile Include="Patterns\Graphs\DirectedAcyclicGraph.cs" />
-    <Compile Include="Patterns\IoC\IoCContainer.cs" />
+    <Compile Include="Patterns\IoC\IContainer.cs" />
+    <Compile Include="Patterns\IoC\Container.cs" />
     <Compile Include="ProgressEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reflection\BaseFieldAccessor.cs" />
@@ -98,10 +102,7 @@
     <Compile Include="Reflection\FieldAccessor.cs" />
     <Compile Include="Reflection\MethodInvoker.cs" />
     <Compile Include="Reflection\PropertyAccesor.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Client.licenseheader" />
-    <None Include="packages.config" />
+    <Compile Include="TrackableBase.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

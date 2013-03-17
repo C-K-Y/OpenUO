@@ -1,48 +1,67 @@
 ﻿#region License Header
-/***************************************************************************
- *   Copyright (c) 2011 OpenUO Software Team.
- *   All Right Reserved.
- *
- *   $Id: $:
- *
- *   This program is free software; you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
- *   (at your option) any later version.
- ***************************************************************************/
- #endregion
+
+// /***************************************************************************
+//  *   Copyright (c) 2011 OpenUO Software Team.
+//  *   All Right Reserved.
+//  *
+//  *   SoundStorageAdapter.cs
+//  *
+//  *   This program is free software; you can redistribute it and/or modify
+//  *   it under the terms of the GNU General Public License as published by
+//  *   the Free Software Foundation; either version 3 of the License, or
+//  *   (at your option) any later version.
+//  ***************************************************************************/
+
+#endregion
+
+#region Usings
 
 using System;
 using System.IO;
+using System.Text;
+
+#endregion
 
 namespace OpenUO.Ultima.Adapters
 {
     public class SoundStorageAdapter : StorageAdapterBase, ISoundStorageAdapter<Sound>
     {
-        private FileIndex _fileIndex;
+        private FileIndexBase _fileIndex;
+
+        public override int Length
+        {
+            get
+            {
+                if (!IsInitialized)
+                {
+                    Initialize();
+                }
+
+                return _fileIndex.Length;
+            }
+        }
 
         public override void Initialize()
         {
             base.Initialize();
 
-            var install = Install;
+            InstallLocation install = Install;
 
             _fileIndex =
                 install.IsUOPFormat
-                    ? install.CreateFileIndex("soundLegacyMUL.uop")
+                    ? install.CreateFileIndex("soundLegacyMUL.uop", 0xFFF, false, ".dat")
                     : install.CreateFileIndex("soundidx.mul", "sound..mul");
         }
 
-        public unsafe Sound GetSound(int index)
+        public Sound GetSound(int index)
         {
             int length, extra;
             Stream stream = _fileIndex.Seek(index, out length, out extra);
 
             if (stream == null)
+            {
                 return null;
-
-            if (_fileIndex.IsUopFormat)
-                stream.Seek(12, SeekOrigin.Current);
+            }
 
             int[] waveHeader = CreateWaveHeader(length);
 
@@ -58,13 +77,13 @@ namespace OpenUO.Ultima.Adapters
             stream.Read(stringBuffer, 0, 40);
             stream.Read(buffer, headerLength, length);
 
-            string name = System.Text.Encoding.ASCII.GetString(stringBuffer).Trim();
+            string name = Encoding.ASCII.GetString(stringBuffer).Trim();
             int end = name.IndexOf("\0");
             name = name.Substring(0, end);
 
             return new Sound(name, new MemoryStream(buffer));
         }
-        
+
         private static int[] CreateWaveHeader(int length)
         {
             /* ====================
@@ -86,7 +105,7 @@ namespace OpenUO.Ultima.Adapters
              * short[..] - data /
              * ====================
              * */
-            return new[] { 0x46464952, (length + 12), 0x45564157, 0x20746D66, 0x10, 0x010001, 0x5622, 0xAC44, 0x100002, 0x61746164, (length - 24) };
+            return new[] {0x46464952, (length + 12), 0x45564157, 0x20746D66, 0x10, 0x010001, 0x5622, 0xAC44, 0x100002, 0x61746164, (length - 24)};
         }
     }
 }
